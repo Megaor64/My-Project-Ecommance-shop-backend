@@ -1,12 +1,21 @@
+import dns from "node:dns";
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
+// Render (and many clouds) cannot reach Gmail over IPv6 — prefer IPv4.
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
+
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: env.emailUser,
     pass: env.emailPass,
   },
+  family: 4,
 });
 
 async function verificationMail(to, code) {
@@ -24,7 +33,7 @@ async function verificationMail(to, code) {
 async function resetPasswordMail(to, token) {
   const resetUrl = `${env.clientUrl}/reset-password?token=${encodeURIComponent(token)}`;
   await transporter.sendMail({
-    from: `my website ${env.emailUser}`,
+    from: `Folio Books <${env.emailUser}>`,
     to,
     subject: "Password reset link",
     text: `Use this link to reset your password: ${resetUrl}`,
