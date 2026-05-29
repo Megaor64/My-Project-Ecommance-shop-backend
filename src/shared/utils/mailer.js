@@ -11,12 +11,12 @@ const transporter = nodemailer.createTransport({
 
 async function verificationMail(to, code) {
   await transporter.sendMail({
-    from: `my website ${env.emailUser}`,
+    from: `Folio Books <${env.emailUser}>`,
     to,
-    subject: "Your Verification Code:",
-    text: `This is the Verification code: ${code}`,
+    subject: "Your Folio Books verification code",
+    text: `Your verification code is: ${code}\n\nThis code expires in 5 hours.`,
     html: `<h2>Your verification code</h2>
-      <h1>${code}</h1>
+      <h1 style="letter-spacing:0.2em">${code}</h1>
       <p>This code expires in 5 hours.</p>`,
   });
 }

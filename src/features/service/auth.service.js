@@ -196,8 +196,9 @@ export async function registerUser({ name, email, password, role = "customer" })
   });
   try {
     await mailer.verificationMail(normalizedEmail, code);
-  } catch {
-    // registration succeeds even if email fails
+  } catch (error) {
+    console.error("Failed to send verification email on register:", error);
+    // Account is created; user can use resend on the verify page.
   }
   await ensureSettings(user._id, user.role);
   return toPublicUser(user);
@@ -240,8 +241,13 @@ export async function resendVerificationEmail({ email }) {
   await user.save();
   try {
     await mailer.verificationMail(normalizedEmail, code);
-  } catch {
-    // still return success if mail fails (same as register)
+  } catch (error) {
+    console.error("Failed to send verification email on resend:", error);
+    const err = new Error(
+      "Could not send verification email. Check server email settings (Gmail App Password on Render)."
+    );
+    err.status = 503;
+    throw err;
   }
   return { message: "Verification code sent." };
 }

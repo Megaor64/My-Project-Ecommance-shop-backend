@@ -17,6 +17,11 @@ for (const key of required) {
   }
 }
 
+function normalizeEmailPass(value) {
+  // Gmail app passwords are often copied with spaces (abcd efgh ...).
+  return String(value || "").replace(/\s+/g, "").trim();
+}
+
 export const env = {
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
@@ -24,8 +29,8 @@ export const env = {
   refreshJwtSecret: process.env.REFRESH_JWT_SECRET || process.env.JWT_SECRET,
   adminPass: process.env.ADMIN_PASS,
   clientUrl: process.env.CLIENT_URL || "http://localhost:3000",
-  emailUser: process.env.EMAIL_USER,
-  emailPass: process.env.EMAIL_PASS,
+  emailUser: String(process.env.EMAIL_USER || "").trim(),
+  emailPass: normalizeEmailPass(process.env.EMAIL_PASS),
   nodeEnv: process.env.NODE_ENV || "development",
   adminRegisterEnabled: process.env.ADMIN_REGISTER_ENABLED === "true",
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
