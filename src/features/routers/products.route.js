@@ -35,6 +35,7 @@ router.get(
 router.patch(
   "/:id",
   validateRequest(productIdParamsSchema, "params"),
+  uploadFlie,
   validateRequest(updateProductBodySchema, "body"),
   authMiddleware,
   adminCheck,

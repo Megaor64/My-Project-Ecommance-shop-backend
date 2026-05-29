@@ -11,8 +11,8 @@ export const createProductBodySchema = Joi.object({
   price: Joi.number().min(0).required(),
   category: Joi.string().allow("").max(200).optional(),
   stock: Joi.number().integer().min(0).optional(),
-  isActive: Joi.boolean().optional(),
-}).options({ stripUnknown: true });
+  isActive: Joi.boolean().truthy("true").falsy("false").optional(),
+}).options({ stripUnknown: true, convert: true });
 
 // updateProductBodySchema - for PATCH /products/:id
 export const updateProductBodySchema = Joi.object({
@@ -21,8 +21,8 @@ export const updateProductBodySchema = Joi.object({
   price: Joi.number().min(0).optional(),
   category: Joi.string().allow("").max(200).optional(),
   stock: Joi.number().integer().min(0).optional(),
-  isActive: Joi.boolean().optional(),
+  isActive: Joi.boolean().truthy("true").falsy("false").optional(),
   imageUrl: Joi.string().uri().allow("").optional(),
   imagePublicId: Joi.string().allow(null, "").optional(),
-}).options({ stripUnknown: true });
+}).options({ stripUnknown: true, convert: true });
 

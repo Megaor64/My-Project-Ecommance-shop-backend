@@ -51,7 +51,11 @@ const getProductById = async (req, res, next) => {
 
 const updateProduct = async (req, res, next) => {
   try {
-    const product = await productsService.updateProduct(req.params.id, req.body);
+    const product = await productsService.updateProduct(
+      req.params.id,
+      req.body,
+      req.file?.buffer
+    );
     if (!product) {
       return res.status(404).json({
         status: 404,

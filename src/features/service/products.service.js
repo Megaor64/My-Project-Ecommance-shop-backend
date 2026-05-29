@@ -42,8 +42,21 @@ export async function getProductById(id) {
   return Product.findById(id);
 }
 
-export async function updateProduct(id, body) {
-  return Product.findByIdAndUpdate(id, pickAllowedFields(body), {
+export async function updateProduct(id, body, fileBuffer) {
+  const existing = await Product.findById(id);
+  if (!existing) return null;
+
+  const data = pickAllowedFields(body);
+  if (fileBuffer) {
+    const result = await uploadToCloudinary(fileBuffer, "products");
+    data.imageUrl = result.secure_url;
+    data.imagePublicId = result.public_id;
+    if (existing.imagePublicId) {
+      await deleteFromCloudinary(existing.imagePublicId);
+    }
+  }
+
+  return Product.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
   });
