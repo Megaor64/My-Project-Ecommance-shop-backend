@@ -2,25 +2,75 @@ import dns from "node:dns";
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
-// Render (and many clouds) cannot reach Gmail over IPv6 — prefer IPv4.
+// Render free tier blocks SMTP ports 465/587 — use Resend (HTTPS) in production.
 if (typeof dns.setDefaultResultOrder === "function") {
   dns.setDefaultResultOrder("ipv4first");
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: env.emailUser,
-    pass: env.emailPass,
-  },
-  family: 4,
-});
+let smtpTransporter = null;
+
+function getSmtpTransporter() {
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: env.emailUser,
+        pass: env.emailPass,
+      },
+      family: 4,
+      connectionTimeout: 15_000,
+      greetingTimeout: 15_000,
+      socketTimeout: 15_000,
+    });
+  }
+  return smtpTransporter;
+}
+
+async function sendViaResend({ to, subject, text, html }) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: env.resendFrom,
+      to: [to],
+      subject,
+      text,
+      html,
+    }),
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail =
+      typeof body.message === "string"
+        ? body.message
+        : JSON.stringify(body);
+    throw new Error(`Resend API error: ${detail}`);
+  }
+}
+
+async function sendMail({ to, subject, text, html }) {
+  if (env.resendApiKey) {
+    await sendViaResend({ to, subject, text, html });
+    return;
+  }
+
+  await getSmtpTransporter().sendMail({
+    from: `Folio Books <${env.emailUser}>`,
+    to,
+    subject,
+    text,
+    html,
+  });
+}
 
 async function verificationMail(to, code) {
-  await transporter.sendMail({
-    from: `Folio Books <${env.emailUser}>`,
+  await sendMail({
     to,
     subject: "Your Folio Books verification code",
     text: `Your verification code is: ${code}\n\nThis code expires in 5 hours.`,
@@ -32,8 +82,7 @@ async function verificationMail(to, code) {
 
 async function resetPasswordMail(to, token) {
   const resetUrl = `${env.clientUrl}/reset-password?token=${encodeURIComponent(token)}`;
-  await transporter.sendMail({
-    from: `Folio Books <${env.emailUser}>`,
+  await sendMail({
     to,
     subject: "Password reset link",
     text: `Use this link to reset your password: ${resetUrl}`,
@@ -80,8 +129,7 @@ ${originalMessage}
     <p style="white-space:pre-wrap;color:#555">${safeOriginal}</p>
     <p>— Folio Books</p>`;
 
-  await transporter.sendMail({
-    from: `Folio Books <${env.emailUser}>`,
+  await sendMail({
     to,
     subject: `Re: ${subject}`,
     text,

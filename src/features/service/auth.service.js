@@ -244,7 +244,7 @@ export async function resendVerificationEmail({ email }) {
   } catch (error) {
     console.error("Failed to send verification email on resend:", error);
     const err = new Error(
-      "Could not send verification email. Check server email settings (Gmail App Password on Render)."
+      "Could not send verification email. On Render free tier use RESEND_API_KEY (SMTP is blocked)."
     );
     err.status = 503;
     throw err;
